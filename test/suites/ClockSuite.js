@@ -12,12 +12,19 @@ describe("Clock", function() {
 		var clock = new Clock({period: period});
 
 		expect(clock instanceof EventEmitter).to.be(true);
-		var beginning = new Date();
+		var beginning = Date.now();
 		var tickTimes = [];
+		var delays = [];
+		var tolerance = 0;
 		var observers = {
 			"A": spy(),
-			"B": spy(function(tickTime) {
+			"B": spy(function(tickTime, delay) {
 				tickTimes.push(tickTime);
+				if(delay >= 2 * period * 1000) {
+console.log(delay, Math.floor(delay / (period * 1000)) - 1);
+					tolerance += Math.floor(delay / (period * 1000)) - 1;
+				}
+				delays.push(delay);
 			}),
 			"C": spy()
 		};
@@ -40,7 +47,7 @@ describe("Clock", function() {
 		clock.on("tick", observers["C"]);
 		clock.on("stop", observers["C"]);
 
-		var duration = 5;
+		var duration = 120;
 		// +1 for the first "tick" event which occurs right after the "start" event
 		var totalTickCount = Math.floor(duration / clock.period) + 1;
 		var halfDuration = duration / 2;
@@ -58,22 +65,23 @@ describe("Clock", function() {
 
 		setTimeout(function() {
 			clock.stop();
-
+console.log("TOLERANCE", tolerance);
 			// +1 for the "start" event
-			expect(observers["A"].callCount).to.equal(halfTickCount + 1);
+			expect(observers["A"].callCount).to.equal(halfTickCount + 1 - tolerance);
 
-			expect(observers["B"].callCount).to.equal(totalTickCount);
+			expect(observers["B"].callCount).to.equal(totalTickCount - tolerance);
 
 			// +1 for the "stop" event
-			expect(observers["C"].callCount).to.equal(totalTickCount + 1);
+			expect(observers["C"].callCount).to.equal(totalTickCount + 1 - tolerance);
 
 			// Verify it is well paced (here we expect no drifting so maybe the period shall b updated if too optimistic)
 			tickTimes.forEach(function(tickTime, index) {
-				var lowLimit = beginning.getTime() + index * period * 1000;
-				var highLimit = lowLimit + period * 1000;
-//console.log([lowLimit, highLimit], tickTime.getTime());
-				expect(tickTime.getTime()).to.be.aboveOrEqual(lowLimit);
-				expect(tickTime.getTime()).to.be.below(highLimit);
+				var delay = delays[index];
+				var lowLimit = beginning + index * period * 1000 + delay;
+				var highLimit = lowLimit + period * 1000 + delay;
+console.log([lowLimit, highLimit], tickTime, delay);
+				expect(tickTime).to.be.aboveOrEqual(lowLimit);
+				expect(tickTime).to.be.below(highLimit);
 			});
 
 			proceed();
@@ -82,42 +90,52 @@ describe("Clock", function() {
 		this.timeout((duration + 1) * 1000);
 	});
 
-	it.only("should catch up if it got delayed", function(proceed) {
-		var period = 0.01;
+	it("should catch up if it got delayed", function(proceed) {
+		var period = 0.02;
 		var clock = new Clock({period: period});
 
 		var observers = {
-			"A": spy(function() { console.log("A", Date.now()); }),
-			"B": spy(/*function() { console.log("B"); }*/)
+			"A": spy(),
+			"B": spy()
 		};
 
 		clock.on("tick", observers["A"]);
 
-		var beginning = new Date();
+		var beginning = Date.now();
 		var blockingDelay = 1;
 
-		clock.once("tick", function() {
+		clock.once("tick", function(tickTime) {
 			process.nextTick(function() {
-console.log(Date.now());
+				expect(Date.now()).to.be.above(afterBlocking);
+
 				setTimeout(function() {
-console.log(Date.now());
-					expect(observers["A"].callCount).to.be(2);
-					expect(observers["B"].callCount).to.be(2);
+					expect(observers["A"].callCount).to.be(3);
+					expect(observers["B"].callCount).to.be(3);
+					expect(observers["B"].args[2][0]).to.be.above(tickTime + (blockingDelay + period) * 1000);
+					expect(observers["B"].args[2][0]).to.be.below(tickTime + (blockingDelay + 2 *period) * 1000);
 
 					proceed();
-				}, period * 1000);
+				}, period * 1000 + 1);
 
-				var elapsedTime = new Date() - beginning;
-				expect(elapsedTime > blockingDelay * 1000).to.be(true);
-				expect(elapsedTime < (blockingDelay + period) * 1000).to.be(true);
+				var elapsedTime = Date.now() - beginning;
+				expect(elapsedTime).to.be.above(blockingDelay * 1000);
+				expect(elapsedTime).to.be.below((blockingDelay + period) * 1000);
+
 				expect(observers["A"].callCount).to.be(1);
+				// At that point, observer B was notified about the same event as observer A.
 				expect(observers["B"].callCount).to.be(1);
+				expect(observers["B"].args[0][0]).to.be(tickTime);
 			});
 
-			var before = Date.now();
-			block(blockingDelay);
+			expect(observers["A"].callCount).to.be(1);
+			expect(observers["A"].args[0][0]).to.be(tickTime);
+			// Observer B was attached after current function was...
+			expect(observers["B"].callCount).to.be(0);
 
-			console.log((Date.now() - before) / (period * 1000));
+			var beforeBlocking = Date.now();
+			block(blockingDelay);
+			var afterBlocking = Date.now();
+			expect(afterBlocking - beforeBlocking).to.be.above(blockingDelay * 1000);
 		});
 
 		clock.on("tick", observers["B"]);
@@ -127,9 +145,9 @@ console.log(Date.now());
 });
 
 function block(delay) {
-	var threshold = new Date().getTime() + (delay * 1000);
+	var threshold = Date.now() + (delay * 1000);
 
-	while(new Date().getTime() <= threshold);
+	while(Date.now() <= threshold);
 }
 
 expect.Assertion.prototype.aboveOrEqual = function(n) {

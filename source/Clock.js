@@ -25,22 +25,22 @@ Clock.prototype.start = function start() {
 		var now = Date.now();
 
 		function tick() {
-			self.emit("tick", new Date());
-
 			var now = Date.now();
-			var correction = now - nextTickTime;
+			var delay = now - nextTickTime;
+
+			self.emit("tick", now, delay);
+
 			nextTickTime += own.period * 1000;
 
-			var delayBeforeNextTick = own.period * 1000 - correction;
-			if(delayBeforeNextTick <= 0) {
-console.log("DELAYED!", delayBeforeNextTick);
+			var remaining = own.period * 1000 - delay;
+			if(remaining <= 0) {
+console.log("DELAYED", delay);
 				nextTickTime = now;
-				delayBeforeNextTick = 0;
-				// Here we got seriously delayed so let's tick as soon as possible...
+				// Here we got seriously delayed so let's catch up!
 				own.timer = setImmediate(tick);
 			}
 			else {
-				own.timer = setTimeout(tick, delayBeforeNextTick);
+				own.timer = setTimeout(tick, remaining);
 			}
 		}
 
