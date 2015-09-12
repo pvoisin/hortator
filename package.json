@@ -1,8 +1,12 @@
 {
   "name": "hortator",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Simple clock implementation with correction",
   "keywords": ["time", "date", "clock", "tick", "pace", "rythm", "engine"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pvoisin/hortator"
+  },
   "main": "source/Clock",
   "scripts": {
     "test": "grunt test"
