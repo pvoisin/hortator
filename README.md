@@ -1,3 +1,5 @@
+[![NPM Version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Coverage Status][coveralls-image]][coveralls-url]
+
 # Hortator
 
 Simple clock that cares about time... but doesn't really care about your business!
@@ -22,3 +24,10 @@ clock.start();
 
 clock.stop();
 ```
+
+[npm-image]: https://img.shields.io/npm/v/hortator.svg?style=flat
+[npm-url]: https://www.npmjs.com/package/hortator
+[travis-image]: https://img.shields.io/travis/pvoisin/hortator.svg?branch=master
+[travis-url]: https://travis-ci.org/pvoisin/hortator/
+[coveralls-image]: https://coveralls.io/repos/pvoisin/hortator/badge.svg?branch=master
+[coveralls-url]: https://coveralls.io/r/pvoisin/hortator?branch=master

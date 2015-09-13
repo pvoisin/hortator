@@ -1,0 +1,8 @@
+verbose: false
+instrumentation:
+    root: source
+    extensions:
+        - .js
+    excludes: ["helper.js"]
+reporting:
+    dir: ./.coverage

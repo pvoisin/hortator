@@ -2,7 +2,15 @@
   "name": "hortator",
   "version": "0.0.2",
   "description": "Simple clock implementation with correction",
-  "keywords": ["time", "date", "clock", "tick", "pace", "rythm", "engine"],
+  "keywords": [
+    "time",
+    "date",
+    "clock",
+    "tick",
+    "pace",
+    "rythm",
+    "engine"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/pvoisin/hortator"
@@ -12,8 +20,7 @@
     "test": "grunt test"
   },
   "author": "pierre.voisin@gmail.com",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "expect.js": "~0.3.1",
     "grunt": "~0.4.5",
